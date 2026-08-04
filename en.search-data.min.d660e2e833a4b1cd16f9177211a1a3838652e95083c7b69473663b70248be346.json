@@ -1,0 +1,1 @@
+[{"id":0,"href":"/sections/getting-started/","title":"Getting Started","section":"Sections","content":"This page demonstrates fenced code blocks with copy support.\nhugo server --config hugo.toml,config/sites/batch-12.toml"},{"id":1,"href":"/sections/","title":"Sections","section":"STEP Batch 12","content":"Batch 12 Sections index.\n"}]
