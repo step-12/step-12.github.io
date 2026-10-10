@@ -1,0 +1,473 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>A Trigonometry Primer</title>
+<script src="https://cdn.jsdelivr.net/npm/p5@1.11.10/lib/p5.min.js"></script>
+<style>
+  :root{
+    --ink:#172235; --muted:#64748b; --line:#dfe6ef; --paper:#f8fafc;
+    --blue:#3267d6; --blue-soft:#eaf1ff; --red:#e05252; --green:#15956a;
+    --purple:#8b5cf6; --gold:#d19a26; --nav:#172235;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.65 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+  .shell{display:grid;grid-template-columns:280px 1fr;min-height:100vh}
+  aside{position:sticky;top:0;height:100vh;background:var(--nav);color:#d9e2f0;padding:26px 16px;overflow:auto}
+  aside h1{font-size:21px;line-height:1.2;color:white;margin:0 10px 26px}
+  .navitem{display:flex;gap:11px;align-items:center;padding:9px 10px;margin:2px 0;border-radius:10px;color:#aebbd0;text-decoration:none;font-size:14px}
+  .navitem:hover{background:#22324d;color:white}
+  .navitem.active{background:#2e5fbf;color:white}
+  .num{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:#26344b;color:#dce7f8;font-size:12px;flex:none}
+  .active .num{background:#d9e7ff;color:#2859b7}
+  main{max-width:1220px;width:100%;padding:54px 48px 100px;margin:auto}
+  .hero{margin-bottom:42px}
+  .eyebrow{font-size:13px;text-transform:uppercase;letter-spacing:.14em;color:var(--blue);font-weight:750}
+  h2{font-size:42px;line-height:1.12;margin:8px 0 12px;letter-spacing:-.035em}
+  h3{font-size:25px;line-height:1.2;margin:0 0 12px}
+  h4{font-size:18px;margin:0 0 8px}
+  p{max-width:800px}
+  .lede{font-size:19px;color:#46546a;max-width:840px}
+  section{scroll-margin-top:28px;margin:0 0 80px}
+  .section-head{margin-bottom:24px}
+  .section-num{color:var(--blue);font-weight:750;font-size:14px}
+  .card{background:white;border:1px solid var(--line);border-radius:16px;box-shadow:0 8px 28px rgba(29,46,76,.05);padding:22px}
+  .vizgrid{display:grid;grid-template-columns:minmax(360px,1.3fr) minmax(280px,.7fr);gap:16px;align-items:stretch}
+  .canvas-wrap{background:#fff;border:1px solid var(--line);border-radius:16px;overflow:hidden;min-height:360px}
+  .canvas-wrap canvas{display:block;width:100%!important;height:auto!important}
+  .controls{display:grid;gap:14px;align-content:start}
+  label{font-size:13px;color:#526177;font-weight:700;display:block}
+  input[type=range]{width:100%;accent-color:var(--blue)}
+  .readout{display:grid;grid-template-columns:1fr auto;gap:7px 12px;padding-top:8px}
+  .readout div:nth-child(odd){color:#657286}.readout div:nth-child(even){font-variant-numeric:tabular-nums;font-weight:700}
+  .formula{background:#f4f0ff;border-radius:12px;padding:17px 18px;text-align:center;font:24px Georgia,serif;margin:14px 0}
+  .formula small{display:block;font:13px system-ui;color:#657286;margin-top:6px}
+  .twocol{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .note{border-left:4px solid var(--blue);padding:10px 16px;background:#f3f7ff;border-radius:0 10px 10px 0;margin:18px 0}
+  .question{margin-top:18px;padding:16px 18px;background:#effaf5;border:1px solid #d5eee3;border-radius:12px}
+  .question strong{color:#117956}
+  .mini{font-size:14px;color:#68768a}
+  .pill{display:inline-block;padding:3px 9px;border-radius:999px;background:#eef3fa;color:#506077;font-size:12px;font-weight:700}
+  .footer{padding-top:10px;color:#6d7a8d;font-size:13px}
+  .table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+  .table th,.table td{padding:9px 10px;border-bottom:1px solid var(--line);text-align:right}
+  .table th:first-child,.table td:first-child{text-align:left}
+  button{border:0;border-radius:9px;background:var(--blue);color:white;padding:9px 13px;font-weight:700;cursor:pointer}
+  button.secondary{background:#edf2f8;color:#41516a}
+  .buttonrow{display:flex;gap:8px;flex-wrap:wrap}
+  .legend{display:flex;gap:15px;flex-wrap:wrap;font-size:12px;color:#657286;margin-top:8px}
+  .dot{width:9px;height:9px;border-radius:50%;display:inline-block;margin-right:5px}
+  @media(max-width:900px){
+    .shell{grid-template-columns:1fr}
+    aside{position:relative;height:auto}
+    .navlist{display:flex;overflow:auto}
+    .navitem{min-width:max-content}
+    main{padding:32px 18px 70px}
+    .vizgrid,.twocol{grid-template-columns:1fr}
+    h2{font-size:34px}
+  }
+</style>
+</head>
+<body>
+<div class="shell">
+<aside>
+  <h1>A Trigonometry Primer</h1>
+  <nav class="navlist">
+    <a class="navitem" href="#circle"><span class="num">1</span>The Circle</a>
+    <a class="navitem" href="#angles"><span class="num">2</span>Angles</a>
+    <a class="navitem" href="#coordinates"><span class="num">3</span>Coordinates on a Circle</a>
+    <a class="navitem" href="#sinecos"><span class="num">4</span>Sine and Cosine</a>
+    <a class="navitem" href="#radians"><span class="num">5</span>Radians</a>
+    <a class="navitem" href="#unit"><span class="num">6</span>The Unit Circle</a>
+    <a class="navitem" href="#waves"><span class="num">7</span>Sine and Cosine as Waves</a>
+    <a class="navitem" href="#relationship"><span class="num">8</span>The Relationship</a>
+    <a class="navitem" href="#tangent"><span class="num">9</span>Tangent</a>
+    <a class="navitem" href="#triangles"><span class="num">10</span>Triangles</a>
+    <a class="navitem" href="#inverse"><span class="num">11</span>Inverse Trigonometric Functions</a>
+    <a class="navitem" href="#polar"><span class="num">12</span>Polar Coordinates</a>
+    <a class="navitem" href="#rotation"><span class="num">13</span>Rotation</a>
+  </nav>
+</aside>
+
+<main>
+<header class="hero">
+  <div class="eyebrow">An interactive exploration</div>
+  <h2>A Trigonometry Primer</h2>
+  <p class="lede">We usually meet trigonometry through triangles. Here we will take another route: start with a circle, move a point, and let the relationships reveal themselves.</p>
+</header>
+
+<section id="circle">
+  <div class="section-head"><div class="section-num">01</div><h3>The Circle</h3>
+  <p>A circle gives us a simple world in which position, distance and direction can all be seen at once. Drag the point around it.</p></div>
+  <div class="vizgrid">
+    <div class="canvas-wrap" id="circleCanvas"></div>
+    <div class="card controls">
+      <h4>A point on a circle</h4>
+      <label>Angle <input id="circleAngle" type="range" min="0" max="360" value="40"></label>
+      <div class="readout"><div>angle</div><div id="circleAngleOut">40°</div><div>radius</div><div>1</div></div>
+      <div class="note">The point is always exactly the same distance from the centre. Only its direction changes.</div>
+      <div class="question"><strong>Notice</strong><br>What information would you need to describe the point without drawing the whole circle?</div>
+    </div>
+  </div>
+</section>
+
+<section id="angles">
+  <div class="section-head"><div class="section-num">02</div><h3>Angles</h3>
+  <p>An angle is a measure of rotation. We can describe the same point by saying how far we have turned from a starting direction.</p></div>
+  <div class="vizgrid">
+    <div class="canvas-wrap" id="angleCanvas"></div>
+    <div class="card controls">
+      <h4>One turn, many positions</h4>
+      <label>Angle <input id="angleSlider" type="range" min="-360" max="720" value="90"></label>
+      <div class="readout"><div>degrees</div><div id="angleOut">90°</div><div>turns</div><div id="turnOut">0.25</div></div>
+      <p class="mini">A full turn is 360°. A half turn is 180°. A quarter turn is 90°.</p>
+      <div class="question"><strong>Notice</strong><br>What is different about 30° and 390°? What is different about 90° and −270°?</div>
+    </div>
+  </div>
+</section>
+
+<section id="coordinates">
+  <div class="section-head"><div class="section-num">03</div><h3>Coordinates on a Circle</h3>
+  <p>Now give the circle a coordinate system. The point has an <em>x</em>-coordinate and a <em>y</em>-coordinate, and both change as the point moves.</p></div>
+  <div class="vizgrid">
+    <div class="canvas-wrap" id="coordCanvas"></div>
+    <div class="card controls">
+      <h4>Watch the projections</h4>
+      <label>Angle <input id="coordAngle" type="range" min="0" max="360" value="55"></label>
+      <label>Radius <input id="coordRadius" type="range" min="0.3" max="1.4" step="0.01" value="1"></label>
+      <div class="readout"><div>x</div><div id="coordX">—</div><div>y</div><div id="coordY">—</div><div>radius</div><div id="coordR">—</div></div>
+      <div class="question"><strong>Notice</strong><br>The horizontal and vertical distances are not arbitrary. How do they depend on the angle?</div>
+    </div>
+  </div>
+</section>
+
+<section id="sinecos">
+  <div class="section-head"><div class="section-num">04</div><h3>Sine and Cosine</h3>
+  <p>Here we give names to the two projections we have been watching. On a unit circle, the point at angle θ has coordinates <strong>(cos θ, sin θ)</strong>.</p></div>
+  <div class="vizgrid">
+    <div class="canvas-wrap" id="scCanvas"></div>
+    <div class="card controls">
+      <h4>The two coordinates</h4>
+      <label>Angle <input id="scAngle" type="range" min="0" max="360" value="45"></label>
+      <div class="readout"><div>cos θ</div><div id="cosOut">—</div><div>sin θ</div><div id="sinOut">—</div><div>θ</div><div id="scDeg">—</div></div>
+      <div class="formula">(x, y) = (cos θ, sin θ)<small>for a circle of radius 1</small></div>
+      <div class="question"><strong>Explore</strong><br>Move through all four quadrants. When is sine positive? When is cosine negative?</div>
+    </div>
+  </div>
+</section>
+
+<section id="radians">
+  <div class="section-head"><div class="section-num">05</div><h3>Radians</h3>
+  <p>Degrees divide a turn into 360 equal pieces. Radians measure the angle using the circle itself: the angle is the length of the arc divided by the radius.</p></div>
+  <div class="vizgrid">
+    <div class="canvas-wrap" id="radCanvas"></div>
+    <div class="card controls">
+      <h4>Measure the arc</h4>
+      <label>Angle <input id="radAngle" type="range" min="0" max="360" value="180"></label>
+      <div class="readout"><div>degrees</div><div id="radDeg">180°</div><div>radians</div><div id="radOut">π</div><div>arc / radius</div><div id="arcRatio">3.142</div></div>
+      <div class="note">A complete circumference is 2πr. For a full turn, arc ÷ radius is therefore 2π.</div>
+      <div class="question"><strong>Notice</strong><br>Radians are not a second kind of angle. They are a different way of measuring the same angle.</div>
+    </div>
+  </div>
+</section>
+
+<section id="unit">
+  <div class="section-head"><div class="section-num">06</div><h3>The Unit Circle</h3>
+  <p>With radius 1, the circle becomes a particularly useful reference. Every point on it tells us a sine and cosine value immediately.</p></div>
+  <div class="vizgrid">
+    <div class="canvas-wrap" id="unitCanvas"></div>
+    <div class="card">
+      <h4>Special positions</h4>
+      <table class="table">
+        <thead><tr><th>Angle</th><th>cos θ</th><th>sin θ</th></tr></thead>
+        <tbody>
+          <tr><td>0</td><td>1</td><td>0</td></tr>
+          <tr><td>π/2</td><td>0</td><td>1</td></tr>
+          <tr><td>π</td><td>−1</td><td>0</td></tr>
+          <tr><td>3π/2</td><td>0</td><td>−1</td></tr>
+          <tr><td>2π</td><td>1</td><td>0</td></tr>
+        </tbody>
+      </table>
+      <div class="question"><strong>Explore</strong><br>Notice that the values repeat after one full turn. The circle gives us a natural period.</div>
+    </div>
+  </div>
+</section>
+
+<section id="waves">
+  <div class="section-head"><div class="section-num">07</div><h3>Sine and Cosine as Waves</h3>
+  <p>Take the moving point and record only its vertical coordinate. As the point travels around the circle, that coordinate traces a wave.</p></div>
+  <div class="vizgrid">
+    <div class="canvas-wrap" id="waveCanvas"></div>
+    <div class="card controls">
+      <h4>From circle to graph</h4>
+      <label>Animation speed <input id="waveSpeed" type="range" min="0" max="4" step=".1" value="1"></label>
+      <div class="readout"><div>amplitude</div><div>1</div><div>period</div><div>2π</div></div>
+      <p>The horizontal projection produces cosine. The vertical projection produces sine. They are two shadows of the same circular motion.</p>
+      <div class="question"><strong>Notice</strong><br>Where are the two waves at their maximum and minimum? How far apart are their peaks?</div>
+    </div>
+  </div>
+</section>
+
+<section id="relationship">
+  <div class="section-head"><div class="section-num">08</div><h3>The Relationship Between Sine and Cosine</h3>
+  <p>The two functions are not independent. They come from the same point on the same circle, so their values must obey the geometry of that circle.</p></div>
+  <div class="vizgrid">
+    <div class="canvas-wrap" id="identityCanvas"></div>
+    <div class="card">
+      <h4>A geometric constraint</h4>
+      <p>On the unit circle, every point is exactly one unit from the origin. By the Pythagorean theorem:</p>
+      <div class="formula">cos² θ + sin² θ = 1</div>
+      <p>Change the angle and the two values change, but their squared lengths always add to 1.</p>
+      <div class="question"><strong>Notice</strong><br>The equation is not a mysterious trig rule. It is the equation of the circle.</div>
+    </div>
+  </div>
+</section>
+
+<section id="tangent">
+  <div class="section-head"><div class="section-num">09</div><h3>Tangent</h3>
+  <p>Tangent compares the vertical and horizontal projections. It is the ratio of sine to cosine, and the circle makes its dramatic behaviour near 90° easy to see.</p></div>
+  <div class="vizgrid">
+    <div class="canvas-wrap" id="tanCanvas"></div>
+    <div class="card controls">
+      <h4>Watch the ratio</h4>
+      <label>Angle <input id="tanAngle" type="range" min="-89" max="269" value="35"></label>
+      <div class="readout"><div>θ</div><div id="tanDeg">35°</div><div>sin θ</div><div id="tanSin">—</div><div>cos θ</div><div id="tanCos">—</div><div>tan θ</div><div id="tanVal">—</div></div>
+      <div class="formula">tan θ = sin θ / cos θ</div>
+      <div class="question"><strong>Notice</strong><br>What happens as cosine approaches zero? Why does tangent become so large?</div>
+    </div>
+  </div>
+</section>
+
+<section id="triangles">
+  <div class="section-head"><div class="section-num">10</div><h3>Triangles</h3>
+  <p>Now we can return to the traditional right triangle. It is not a different theory: it is the same circle, viewed through one radius and its projections.</p></div>
+  <div class="vizgrid">
+    <div class="canvas-wrap" id="triCanvas"></div>
+    <div class="card controls">
+      <h4>The familiar ratios</h4>
+      <label>Angle <input id="triAngle" type="range" min="5" max="85" value="35"></label>
+      <div class="readout"><div>sin θ</div><div id="triSin">—</div><div>cos θ</div><div id="triCos">—</div><div>tan θ</div><div id="triTan">—</div></div>
+      <div class="formula">sin θ = opposite / hypotenuse<br>cos θ = adjacent / hypotenuse<br>tan θ = opposite / adjacent</div>
+      <p class="mini">The ratios stay the same if the whole triangle is scaled up or down.</p>
+    </div>
+  </div>
+</section>
+
+<section id="inverse">
+  <div class="section-head"><div class="section-num">11</div><h3>Inverse Trigonometric Functions</h3>
+  <p>We have gone from an angle to a coordinate. Now reverse the question: if we know a coordinate or ratio, can we recover the angle?</p></div>
+  <div class="vizgrid">
+    <div class="canvas-wrap" id="inverseCanvas"></div>
+    <div class="card controls">
+      <h4>From value back to angle</h4>
+      <label>Cosine value <input id="invValue" type="range" min="-1" max="1" step=".01" value=".5"></label>
+      <div class="readout"><div>cos θ</div><div id="invCos">0.50</div><div>arccos value</div><div id="invDeg">60°</div><div>radians</div><div id="invRad">1.047</div></div>
+      <div class="note">Inverse functions answer a different kind of question: “Which angle gives me this value?”</div>
+      <div class="question"><strong>Notice</strong><br>There are several places on a circle with the same cosine. Why must arccos choose a particular range?</div>
+    </div>
+  </div>
+</section>
+
+<section id="polar">
+  <div class="section-head"><div class="section-num">12</div><h3>Polar Coordinates</h3>
+  <p>Cartesian coordinates say “go this far horizontally and this far vertically.” Polar coordinates say “go this far from the centre, at this angle.”</p></div>
+  <div class="vizgrid">
+    <div class="canvas-wrap" id="polarCanvas"></div>
+    <div class="card controls">
+      <h4>Two descriptions of one point</h4>
+      <label>Radius <input id="polarR" type="range" min="0" max="1.35" step=".01" value=".8"></label>
+      <label>Angle <input id="polarA" type="range" min="0" max="360" value="130"></label>
+      <div class="readout"><div>r</div><div id="pR">—</div><div>θ</div><div id="pA">—</div><div>x = r cos θ</div><div id="pX">—</div><div>y = r sin θ</div><div id="pY">—</div></div>
+      <div class="formula">(x, y) = (r cos θ, r sin θ)</div>
+    </div>
+  </div>
+</section>
+
+<section id="rotation">
+  <div class="section-head"><div class="section-num">13</div><h3>Rotation</h3>
+  <p>Finally, take a point away from the origin and rotate it. The same circle ideas give us a way to describe the new coordinates.</p></div>
+  <div class="vizgrid">
+    <div class="canvas-wrap" id="rotationCanvas"></div>
+    <div class="card controls">
+      <h4>Rotate a point</h4>
+      <label>Starting x <input id="rotX" type="range" min=".2" max="1" step=".01" value=".75"></label>
+      <label>Starting y <input id="rotY" type="range" min="0" max="1" step=".01" value=".35"></label>
+      <label>Rotation <input id="rotA" type="range" min="-180" max="180" value="45"></label>
+      <div class="readout"><div>new x</div><div id="newX">—</div><div>new y</div><div id="newY">—</div></div>
+      <div class="formula">x′ = x cos θ − y sin θ<br>y′ = x sin θ + y cos θ</div>
+      <p class="mini">These equations are not a new trick. They are the circle geometry we have been exploring, applied to a point whose radius is not necessarily 1.</p>
+    </div>
+  </div>
+</section>
+
+<div class="footer">A visual-first primer: move things, notice relationships, and let the formulas describe what the geometry is already doing.</div>
+</main>
+</div>
+
+<script>
+const TAU = Math.PI * 2;
+const $ = id => document.getElementById(id);
+const fmt = (n,d=3) => Number(n).toFixed(d);
+const deg = a => a * 180 / Math.PI;
+const rad = d => d * Math.PI / 180;
+function setupSketch(holder, drawFn){
+  return new p5(p=>{
+    p.setup=()=>{ const c=p.createCanvas(700,400); c.parent(holder); p.pixelDensity(1); };
+    p.draw=()=>{ p.background(255); drawFn(p); };
+  });
+}
+function axes(p,cx,cy,s){
+  p.stroke('#b9c4d3'); p.strokeWeight(1);
+  p.line(cx-s,cy,cx+s,cy); p.line(cx,cy-s,cx,cy+s);
+  p.fill('#657286'); p.noStroke(); p.textSize(13);
+  p.text('x',cx+s-12,cy-8); p.text('y',cx+8,cy-s+15);
+}
+function circlePoint(cx,cy,r,a){ return [cx+r*Math.cos(a),cy-r*Math.sin(a)]; }
+function grid(p,x,y,w,h,step){
+  p.stroke('#e7edf4'); p.strokeWeight(1);
+  for(let i=x;i<=x+w;i+=step)p.line(i,y,i,y+h);
+  for(let j=y;j<=y+h;j+=step)p.line(x,j,x+w,j);
+}
+function drawCircleScene(p, angle, radius=1, opts={}){
+  const cx=260, cy=200, s=145, R=s*radius;
+  axes(p,cx,cy,s+35);
+  p.noFill(); p.stroke('#7e8da2'); p.strokeWeight(2); p.circle(cx,cy,R*2);
+  const [x,y]=circlePoint(cx,cy,R,angle);
+  if(opts.proj){
+    p.stroke('#e05252'); p.strokeWeight(3); p.line(cx,cy,x,cy);
+    p.stroke('#15956a'); p.line(x,cy,x,y);
+    p.stroke('#8b5cf6'); p.line(cx,cy,x,y);
+    p.stroke('#b8c2cf'); p.setLineDash?.([5,5]); p.line(x,y,x,cy); p.line(x,y,cx,y); p.setLineDash?.([]);
+  } else {
+    p.stroke('#172235'); p.strokeWeight(3); p.line(cx,cy,x,y);
+  }
+  p.noStroke(); p.fill('#3267d6'); p.circle(x,y,16);
+  p.fill('#172235'); p.circle(cx,cy,7);
+  p.fill('#8b5cf6'); p.textSize(18); p.text('θ',cx+38,cy-18);
+  return {x,y,cx,cy,s,R};
+}
+let cAngle=40;
+setupSketch('circleCanvas',(p)=>{
+  const a=rad(+$('circleAngle').value); cAngle=a;
+  drawCircleScene(p,a,1);
+  $('circleAngleOut').textContent=$('circleAngle').value+'°';
+});
+$('circleAngle').oninput=()=>{};
+
+setupSketch('angleCanvas',(p)=>{
+  const d=+$('angleSlider').value, a=rad(d);
+  drawCircleScene(p,a,1);
+  $('angleOut').textContent=d+'°'; $('turnOut').textContent=fmt(d/360,2);
+});
+
+setupSketch('coordCanvas',(p)=>{
+  const d=+$('coordAngle').value, r=+$('coordRadius').value, a=rad(d);
+  const q=drawCircleScene(p,a,r,{proj:true});
+  const x=Math.cos(a)*r, y=Math.sin(a)*r;
+  $('coordX').textContent=fmt(x); $('coordY').textContent=fmt(y); $('coordR').textContent=fmt(r);
+  p.fill('#e05252');p.textSize(15);p.text('x',q.x-10,q.cy+24);
+  p.fill('#15956a');p.text('y',q.x+12,q.y+4);
+});
+
+setupSketch('scCanvas',(p)=>{
+  const d=+$('scAngle').value,a=rad(d),q=drawCircleScene(p,a,1,{proj:true});
+  $('cosOut').textContent=fmt(Math.cos(a)); $('sinOut').textContent=fmt(Math.sin(a)); $('scDeg').textContent=d+'°';
+  p.noStroke();p.fill('#e05252');p.textSize(15);p.text('cos θ',q.x-35,q.cy+25);
+  p.fill('#15956a');p.text('sin θ',q.x+10,q.y+5);
+});
+
+setupSketch('radCanvas',(p)=>{
+  const d=+$('radAngle').value,a=rad(d),q=drawCircleScene(p,a,1);
+  const arc=a; const label=arc===0?'0':arc===Math.PI?'π':arc===TAU?'2π':fmt(arc);
+  $('radDeg').textContent=d+'°';$('radOut').textContent=label;$('arcRatio').textContent=fmt(arc);
+  p.noFill();p.stroke('#8b5cf6');p.strokeWeight(6);p.arc(q.cx,q.cy,250,250,-a,0);
+  p.noStroke();p.fill('#8b5cf6');p.textSize(17);p.text('arc length / radius',430,110);
+});
+
+setupSketch('unitCanvas',(p)=>{
+  const a=rad((millisSafe()%12000)/12000*360);
+  const q=drawCircleScene(p,a,1,{proj:true});
+  p.fill('#e05252');p.textSize(15);p.text('cos θ = '+fmt(Math.cos(a)),390,120);
+  p.fill('#15956a');p.text('sin θ = '+fmt(Math.sin(a)),390,150);
+});
+function millisSafe(){return performance.now()}
+
+let waveT=0;
+setupSketch('waveCanvas',(p)=>{
+  const speed=+$('waveSpeed').value; waveT += 0.01*speed;
+  const left={x:55,y:200,w:210,h:230}, graph={x:315,y:55,w:335,h:290};
+  p.noFill();p.stroke('#7e8da2');p.circle(160,200,180);
+  axes(p,160,200,115);
+  const a=waveT;
+  const [px,py]=circlePoint(160,200,90,a);
+  p.stroke('#172235');p.strokeWeight(3);p.line(160,200,px,py);
+  p.fill('#3267d6');p.noStroke();p.circle(px,py,12);
+  p.stroke('#15956a');p.strokeWeight(2);p.line(px,py,160,py);
+  grid(p,graph.x,graph.y,graph.w,graph.h,55);
+  p.stroke('#b9c4d3');p.line(graph.x,200,graph.x+graph.w,200);
+  p.noFill();p.stroke('#15956a');p.strokeWeight(3);p.beginShape();
+  for(let i=0;i<=graph.w;i++){let t=i/graph.w*TAU; p.vertex(graph.x+i,200-Math.sin(t)*120)} p.endShape();
+  p.stroke('#e05252');p.beginShape();
+  for(let i=0;i<=graph.w;i++){let t=i/graph.w*TAU; p.vertex(graph.x+i,200-Math.cos(t)*120)} p.endShape();
+  p.noStroke();p.fill('#15956a');p.text('sin θ',600,88);p.fill('#e05252');p.text('cos θ',600,110);
+});
+
+setupSketch('identityCanvas',(p)=>{
+  const d=+$('scAngle').value,a=rad(d),q=drawCircleScene(p,a,1,{proj:true});
+  p.fill('#172235');p.textSize(20);p.text('x² + y² = 1',410,140);
+  p.textSize(16);p.fill('#e05252');p.text('cos² θ',410,180);
+  p.fill('#15956a');p.text('+ sin² θ',500,180);
+  p.fill('#172235');p.text('= 1',590,180);
+});
+
+setupSketch('tanCanvas',(p)=>{
+  const d=+$('tanAngle').value,a=rad(d),q=drawCircleScene(p,a,1,{proj:true});
+  const s=Math.sin(a),c=Math.cos(a),t=Math.abs(c)<.001?Infinity:Math.tan(a);
+  $('tanDeg').textContent=d+'°';$('tanSin').textContent=fmt(s);$('tanCos').textContent=fmt(c);
+  $('tanVal').textContent=Number.isFinite(t)?fmt(t):'undefined';
+  const tx=q.cx+Math.min(230,Math.abs(t)*45), ty=q.cy-Math.sign(t||1)*Math.min(230,Math.abs(t)*45);
+  p.stroke('#d19a26');p.strokeWeight(3);p.line(q.x,q.y,tx,ty);
+  p.noStroke();p.fill('#d19a26');p.textSize(15);p.text('tan θ',Math.min(590,tx+8),Math.max(45,ty));
+});
+
+setupSketch('triCanvas',(p)=>{
+  const d=+$('triAngle').value,a=rad(d),R=120;
+  const x0=150,y0=300,x1=x0+R*Math.cos(a),y1=y0-R*Math.sin(a);
+  p.stroke('#172235');p.strokeWeight(3);p.line(x0,y0,x1,y0);p.line(x1,y0,x1,y1);p.line(x0,y0,x1,y1);
+  p.fill('#172235');p.noStroke();p.textSize(18);p.text('θ',x0+25,y0-7);
+  p.fill('#e05252');p.text('adjacent',x0+45,y0+22);p.fill('#15956a');p.text('opposite',x1+10,y0-45);p.fill('#8b5cf6');p.text('hypotenuse',x0+45,y0-65);
+  $('triSin').textContent=fmt(Math.sin(a));$('triCos').textContent=fmt(Math.cos(a));$('triTan').textContent=fmt(Math.tan(a));
+});
+
+setupSketch('inverseCanvas',(p)=>{
+  const v=+$('invValue').value,a=Math.acos(v);
+  drawCircleScene(p,a,1,{proj:true});
+  $('invCos').textContent=fmt(v,2);$('invDeg').textContent=fmt(deg(a),1)+'°';$('invRad').textContent=fmt(a);
+  p.noStroke();p.fill('#8b5cf6');p.textSize(18);p.text('arccos('+fmt(v,2)+') = '+fmt(deg(a),1)+'°',370,220);
+});
+
+setupSketch('polarCanvas',(p)=>{
+  const r=+$('polarR').value,d=+$('polarA').value,a=rad(d),q=drawCircleScene(p,a,r);
+  const x=r*Math.cos(a),y=r*Math.sin(a);
+  $('pR').textContent=fmt(r);$('pA').textContent=d+'°';$('pX').textContent=fmt(x);$('pY').textContent=fmt(y);
+  p.fill('#8b5cf6');p.noStroke();p.textSize(16);p.text('(r, θ)',q.x+10,q.y-8);
+});
+
+setupSketch('rotationCanvas',(p)=>{
+  const x=+$('rotX').value,y=+$('rotY').value,a=rad(+$('rotA').value);
+  const cx=250,cy=250,s=150;
+  axes(p,cx,cy,170);
+  const X=cx+x*s,Y=cy-y*s;
+  const nx=x*Math.cos(a)-y*Math.sin(a), ny=x*Math.sin(a)+y*Math.cos(a);
+  const NX=cx+nx*s,NY=cy-ny*s;
+  p.stroke('#b8c2cf');p.strokeWeight(2);p.line(cx,cy,X,Y);p.line(cx,cy,NX,NY);
+  p.stroke('#3267d6');p.strokeWeight(4);p.line(cx,cy,NX,NY);
+  p.noStroke();p.fill('#172235');p.circle(X,Y,12);p.fill('#3267d6');p.circle(NX,NY,14);
+  p.fill('#172235');p.textSize(15);p.text('original',X+10,Y);p.fill('#3267d6');p.text('rotated',NX+10,NY);
+  $('newX').textContent=fmt(nx);$('newY').textContent=fmt(ny);
+});
+</script>
+</body>
+</html>
