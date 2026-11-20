@@ -1,0 +1,338 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Frames, Time, and Falling</title>
+<style>
+  :root { color-scheme: light; --ink:#172033; --muted:#586579; --line:#d8dee8; --paper:#fff; --wash:#f3f6fa; --blue:#2459a9; --orange:#c45a1a; --green:#26734d; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--wash); color:var(--ink); font:16px/1.45 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+  main { max-width:1160px; margin:0 auto; padding:24px 18px 48px; }
+  h1 { margin:0 0 6px; font-size:clamp(1.8rem,4vw,2.7rem); letter-spacing:-.035em; }
+  h2 { margin:0 0 10px; font-size:1.15rem; }
+  p { margin:6px 0 12px; }
+  .lede { max-width:780px; color:var(--muted); }
+  .panel { background:var(--paper); border:1px solid var(--line); border-radius:14px; padding:16px; margin-top:16px; box-shadow:0 2px 8px #17203308; }
+  .controls { display:grid; grid-template-columns:repeat(4,minmax(130px,1fr)); gap:14px; align-items:end; }
+  label { display:block; font-weight:650; font-size:.9rem; margin-bottom:5px; }
+  input, select, button { font:inherit; }
+  input[type="number"], select { width:100%; padding:8px 9px; border:1px solid #b9c3d2; border-radius:8px; background:white; color:var(--ink); }
+  input[type="range"] { width:100%; accent-color:var(--blue); }
+  .range-value { display:flex; justify-content:space-between; color:var(--muted); font-size:.82rem; }
+  .buttons { display:flex; flex-wrap:wrap; gap:8px; margin-top:14px; }
+  button { border:1px solid #aeb9c9; border-radius:9px; background:white; color:var(--ink); padding:8px 13px; cursor:pointer; font-weight:650; }
+  button.primary { background:var(--blue); color:white; border-color:var(--blue); }
+  button:hover { filter:brightness(.97); }
+  button:focus-visible, input:focus-visible, select:focus-visible { outline:3px solid #84b6ff; outline-offset:2px; }
+  .mode-note { padding:10px 12px; background:#eef4ff; border-left:4px solid var(--blue); border-radius:6px; margin-top:12px; color:#243d68; }
+  .views { display:grid; grid-template-columns:minmax(0,1.1fr) minmax(0,1fr); gap:16px; }
+  canvas { display:block; width:100%; height:auto; border:1px solid var(--line); border-radius:10px; background:#fbfcfe; }
+  .metrics { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; margin-top:12px; }
+  .metric { background:#f5f7fb; border-radius:9px; padding:10px; min-width:0; }
+  .metric span { display:block; color:var(--muted); font-size:.78rem; }
+  .metric strong { display:block; font-size:1.05rem; overflow-wrap:anywhere; }
+  .small { color:var(--muted); font-size:.88rem; }
+  .equation { font-family:ui-monospace,SFMono-Regular,Menlo,monospace; background:#f5f7fb; padding:10px 12px; border-radius:8px; overflow-wrap:anywhere; margin:8px 0; }
+  .table-wrap { overflow:auto; max-height:340px; border:1px solid var(--line); border-radius:9px; }
+  table { border-collapse:collapse; width:100%; font-variant-numeric:tabular-nums; font-size:.9rem; }
+  th, td { text-align:right; padding:8px 10px; border-bottom:1px solid #e5e9f0; white-space:nowrap; }
+  th { background:#f2f5f9; position:sticky; top:0; z-index:1; }
+  th:first-child, td:first-child { text-align:left; }
+  tbody tr { cursor:pointer; }
+  tbody tr:hover { background:#f4f8ff; }
+  tbody tr.selected { background:#e7f0ff; outline:2px solid #8bb4f3; outline-offset:-2px; }
+  .legend { display:flex; gap:14px; flex-wrap:wrap; font-size:.84rem; color:var(--muted); margin:8px 0; }
+  .dot { display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:5px; }
+  .challenge { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  .result { font-weight:700; margin-top:10px; }
+  details { margin-top:12px; }
+  summary { cursor:pointer; font-weight:700; }
+  @media (max-width:800px) { .controls { grid-template-columns:repeat(2,minmax(0,1fr)); } .views,.challenge { grid-template-columns:1fr; } .metrics { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+  @media (max-width:460px) { main { padding:16px 10px 30px; } .controls { grid-template-columns:1fr 1fr; gap:10px; } .panel { padding:12px; } }
+</style>
+</head>
+<body>
+<main>
+  <h1>Frames, Time, and Falling</h1>
+  <p class="lede">A small experiment about motion. Step through a falling ball one update at a time. Watch how gravity changes velocity, and how velocity changes position.</p>
+
+  <section class="panel">
+    <h2>1. Choose how the simulation measures gravity</h2>
+    <div class="controls">
+      <div>
+        <label for="fps">Frames per second (FPS)</label>
+        <select id="fps">
+          <option value="10">10 FPS</option>
+          <option value="30">30 FPS</option>
+          <option value="60" selected>60 FPS</option>
+        </select>
+      </div>
+      <div>
+        <label for="model">Gravity is measured in</label>
+        <select id="model">
+          <option value="time" selected>pixels / second²</option>
+          <option value="frame">pixels / frame²</option>
+        </select>
+      </div>
+      <div>
+        <label for="gravity">Gravity value</label>
+        <input id="gravity" type="number" min="0" max="2000" step="10" value="300">
+      </div>
+      <div>
+        <label for="initial">Initial velocity (pixels/second)</label>
+        <input id="initial" type="number" min="-500" max="500" step="10" value="0">
+      </div>
+    </div>
+    <div class="buttons">
+      <button class="primary" id="step">Step one frame</button>
+      <button id="play">Play</button>
+      <button id="reset">Reset</button>
+      <button id="oneSecond">Run for 1 second</button>
+    </div>
+    <div class="mode-note" id="modeNote" aria-live="polite"></div>
+    <p class="small">This is a discrete simulation: each step updates velocity, then uses the updated velocity to update position. The small difference from ideal continuous motion is intentional; it lets us inspect the calculation row by row.</p>
+  </section>
+
+  <section class="panel">
+    <h2>2. Watch the motion</h2>
+    <div class="views">
+      <div>
+        <canvas id="scene" width="520" height="330" aria-label="Animation of a ball falling down a vertical track"></canvas>
+        <div class="metrics">
+          <div class="metric"><span>Frame</span><strong id="mFrame">0</strong></div>
+          <div class="metric"><span>Elapsed time</span><strong id="mTime">0.000 s</strong></div>
+          <div class="metric"><span>Velocity</span><strong id="mVelocity">0 px/s</strong></div>
+          <div class="metric"><span>Position</span><strong id="mPosition">100 px</strong></div>
+        </div>
+      </div>
+      <div>
+        <canvas id="graph" width="520" height="330" aria-label="Graph of position against elapsed time"></canvas>
+        <div class="legend"><span><i class="dot" style="background:#2459a9"></i>Position history</span><span><i class="dot" style="background:#c45a1a"></i>Current point</span></div>
+        <p class="small">The horizontal axis is elapsed time. The vertical axis is position. A steeper graph means the position is changing faster.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>3. Inspect the calculation, one row at a time</h2>
+    <p class="small">Select any row to inspect its calculations. The table records the state after each frame.</p>
+    <div class="equation" id="calculation">Press “Step one frame” to calculate the first row.</div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Frame</th><th>Time (s)</th><th>Δt (s)</th><th>Velocity before</th><th>Δv</th><th>Velocity after</th><th>Position before</th><th>Δy</th><th>Position after</th></tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>4. The FPS-squared challenge</h2>
+    <p>Compare two ways of describing the <em>same</em> acceleration. Set a physical gravity value, then see what frame-based gravity it corresponds to at different frame rates.</p>
+    <div class="challenge">
+      <div>
+        <label for="challengeG">Physical gravity (pixels/second²)</label>
+        <input id="challengeG" type="number" min="0" max="2000" step="10" value="300">
+      </div>
+      <div>
+        <label for="challengeFps">Frame rate</label>
+        <select id="challengeFps"><option value="10">10 FPS</option><option value="30">30 FPS</option><option value="60" selected>60 FPS</option></select>
+      </div>
+    </div>
+    <div class="equation" id="challengeEquation"></div>
+    <div class="result" id="challengeResult"></div>
+    <details>
+      <summary>Why does FPS get squared?</summary>
+      <p>Velocity has units of pixels/second. Acceleration tells us how much velocity changes per second, so its units are pixels/second².</p>
+      <p>When converting frame-based acceleration, there are two “per frame” factors to convert: one from the change in velocity, and one from the time interval over which that change happens.</p>
+      <div class="equation">a (px/s²) = a (px/frame²) × FPS²</div>
+      <p>So the reverse conversion is:</p>
+      <div class="equation">a (px/frame²) = a (px/s²) ÷ FPS²</div>
+      <p>Velocity only has one time factor:</p>
+      <div class="equation">v (px/s) = v (px/frame) × FPS</div>
+      <p>Position itself is measured in pixels, so it is not multiplied by FPS. In a time-based update, position changes by velocity × elapsed time, and velocity changes by acceleration × elapsed time.</p>
+    </details>
+  </section>
+
+  <section class="panel">
+    <h2>Try to predict before you press the button</h2>
+    <ol>
+      <li>Run for one second at 10 FPS. Reset, switch to 60 FPS, and run for one second again. If gravity is measured in pixels/second², do the final positions look similar?</li>
+      <li>Switch gravity to pixels/frame² and keep the number unchanged. What happens when you change FPS?</li>
+      <li>Use the challenge above to convert the same physical gravity into pixels/frame². Why does the frame-based number get smaller as FPS increases?</li>
+    </ol>
+  </section>
+</main>
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const fpsEl = $('fps'), modelEl = $('model'), gravityEl = $('gravity'), initialEl = $('initial');
+  const scene = $('scene'), sctx = scene.getContext('2d');
+  const graph = $('graph'), gctx = graph.getContext('2d');
+  const rowsEl = $('rows');
+  const fmt = (n, digits=2) => Number.isFinite(n) ? n.toFixed(digits) : '—';
+  let state, history, timer = null, selectedFrame = 0;
+
+  function params() {
+    const fps = Number(fpsEl.value);
+    const model = modelEl.value;
+    const gravity = Math.max(0, Number(gravityEl.value) || 0);
+    // Frame-based acceleration converts to px/s² by multiplying by FPS².
+    const accel = model === 'frame' ? gravity * fps * fps : gravity;
+    return { fps, model, gravity, accel, dt: 1 / fps };
+  }
+  function reset() {
+    stop();
+    const p = params();
+    state = { frame: 0, time: 0, y: 100, v: Number(initialEl.value) || 0 };
+    history = [{...state}];
+    selectedFrame = 0;
+    render();
+    renderRows();
+    updateModeNote();
+  }
+  function stop() {
+    if (timer !== null) { clearInterval(timer); timer = null; }
+    $('play').textContent = 'Play';
+  }
+  function step() {
+    const p = params();
+    const before = {...state};
+    const dv = p.accel * p.dt;
+    const v = before.v + dv;
+    const dy = v * p.dt; // semi-implicit Euler: update velocity, then position
+    state = { frame: before.frame + 1, time: before.time + p.dt, v, y: before.y + dy,
+              beforeV: before.v, dv, beforeY: before.y, dy, dt: p.dt };
+    history.push({...state});
+    selectedFrame = state.frame;
+    // Keep the exercise bounded and the table readable.
+    if (history.length > 601) { history.shift(); }
+    render();
+    renderRows();
+    updateCalculation(state);
+    if (state.time >= 10) stop();
+  }
+  function render() {
+    $('mFrame').textContent = state.frame;
+    $('mTime').textContent = fmt(state.time, 3) + ' s';
+    $('mVelocity').textContent = fmt(state.v, 2) + ' px/s';
+    $('mPosition').textContent = fmt(state.y, 2) + ' px';
+    drawScene();
+    drawGraph();
+  }
+  function drawScene() {
+    const w=scene.width, h=scene.height;
+    sctx.clearRect(0,0,w,h);
+    sctx.fillStyle='#fbfcfe'; sctx.fillRect(0,0,w,h);
+    sctx.fillStyle='#586579'; sctx.font='13px system-ui'; sctx.fillText('Ball position (pixels)',18,24);
+    const top=48, bottom=h-30, x=w/2, scale=0.65;
+    sctx.strokeStyle='#d8dee8'; sctx.lineWidth=2;
+    sctx.beginPath(); sctx.moveTo(x,top); sctx.lineTo(x,bottom); sctx.stroke();
+    for(let y=top;y<=bottom;y+=40){
+      sctx.beginPath(); sctx.moveTo(x-10,y); sctx.lineTo(x+10,y); sctx.stroke();
+      sctx.fillStyle='#586579'; sctx.fillText(String(Math.round((y-top)/scale+100)),x+18,y+4);
+    }
+    const ballY = Math.max(top+8, Math.min(bottom-8, top+(state.y-100)*scale));
+    // Trail
+    sctx.strokeStyle='#8bb4f3'; sctx.lineWidth=2; sctx.beginPath();
+    let started=false;
+    for(const item of history) {
+      const yy=Math.max(top+8,Math.min(bottom-8,top+(item.y-100)*scale));
+      if(!started){sctx.moveTo(x,yy);started=true;} else sctx.lineTo(x,yy);
+    }
+    sctx.stroke();
+    sctx.fillStyle='#c45a1a'; sctx.beginPath(); sctx.arc(x,ballY,10,0,Math.PI*2); sctx.fill();
+    sctx.fillStyle='#fff'; sctx.beginPath(); sctx.arc(x-3,ballY-3,3,0,Math.PI*2); sctx.fill();
+    sctx.fillStyle='#172033'; sctx.font='bold 13px system-ui'; sctx.fillText('y = '+fmt(state.y,1)+' px',18,h-12);
+    sctx.fillStyle='#586579'; sctx.font='12px system-ui'; sctx.fillText('Visual scale is compressed for readability',w-240,h-12);
+  }
+  function drawGraph() {
+    const w=graph.width,h=graph.height, left=54,right=18,top=28,bottom=42;
+    gctx.clearRect(0,0,w,h); gctx.fillStyle='#fbfcfe';gctx.fillRect(0,0,w,h);
+    gctx.font='12px system-ui';gctx.fillStyle='#586579';
+    gctx.fillText('Position (px)',12,17);gctx.fillText('Time (s)',w-65,h-10);
+    const maxT=Math.max(1,Math.ceil(state.time)), ys=history.map(d=>d.y);
+    const minY=Math.min(0,...ys), maxY=Math.max(200,...ys);
+    const ySpan=Math.max(1,maxY-minY);
+    const X=t=>left+(t/maxT)*(w-left-right), Y=y=>top+(maxY-y)/ySpan*(h-top-bottom);
+    gctx.strokeStyle='#e3e8f0';gctx.lineWidth=1;
+    for(let i=0;i<=4;i++){
+      const yy=top+i*(h-top-bottom)/4;
+      gctx.beginPath();gctx.moveTo(left,yy);gctx.lineTo(w-right,yy);gctx.stroke();
+      const val=maxY-i*ySpan/4;gctx.fillStyle='#586579';gctx.fillText(fmt(val,0),8,yy+4);
+      const xx=left+i*(w-left-right)/4;
+      gctx.beginPath();gctx.moveTo(xx,top);gctx.lineTo(xx,h-bottom);gctx.stroke();
+      gctx.fillText(fmt(maxT*i/4,1),xx-10,h-22);
+    }
+    gctx.strokeStyle='#2459a9';gctx.lineWidth=2.5;gctx.beginPath();
+    history.forEach((d,i)=>{if(i===0)gctx.moveTo(X(d.time),Y(d.y));else gctx.lineTo(X(d.time),Y(d.y));});
+    gctx.stroke();
+    gctx.fillStyle='#c45a1a';gctx.beginPath();gctx.arc(X(state.time),Y(state.y),5,0,Math.PI*2);gctx.fill();
+  }
+  function renderRows() {
+    rowsEl.innerHTML = '';
+    // Show the latest 100 rows; state history still retains up to 601.
+    const visible = history.slice(-100);
+    visible.forEach((r) => {
+      const tr=document.createElement('tr');
+      if(r.frame===selectedFrame)tr.className='selected';
+      const cells=[r.frame,fmt(r.time,3),r.frame===0?'—':fmt(r.dt,4),
+        r.frame===0?'—':fmt(r.beforeV,2),r.frame===0?'—':fmt(r.dv,2),fmt(r.v,2),
+        r.frame===0?'—':fmt(r.beforeY,2),r.frame===0?'—':fmt(r.dy,2),fmt(r.y,2)];
+      cells.forEach(v=>{const td=document.createElement('td');td.textContent=v;tr.appendChild(td);});
+      tr.addEventListener('click',()=>{selectedFrame=r.frame;rowsEl.querySelectorAll('tr').forEach(row=>row.classList.remove('selected'));tr.classList.add('selected');updateCalculation(r);});
+      rowsEl.appendChild(tr);
+    });
+    if(state.frame===0) $('calculation').textContent='Press “Step one frame” to calculate the first row.';
+    else updateCalculation(state);
+  }
+  function updateCalculation(r) {
+    if(r.frame===0){$('calculation').textContent='At frame 0: position = '+fmt(r.y,2)+' px; velocity = '+fmt(r.v,2)+' px/s. No update has happened yet.';return;}
+    const p=params();
+    const gText=p.model==='frame'
+      ? `${fmt(p.gravity,4)} px/frame² × ${p.fps}² = ${fmt(p.accel,4)} px/s²`
+      : `${fmt(p.gravity,4)} px/s²`;
+    $('calculation').textContent =
+      `Frame ${r.frame}: Δt = 1/${p.fps} = ${fmt(r.dt,4)} s. `+
+      `Gravity: ${gText}. `+
+      `Δv = a × Δt = ${fmt(p.accel,3)} × ${fmt(r.dt,4)} = ${fmt(r.dv,3)} px/s. `+
+      `Velocity: ${fmt(r.beforeV,3)} + ${fmt(r.dv,3)} = ${fmt(r.v,3)} px/s. `+
+      `Δy = new velocity × Δt = ${fmt(r.v,3)} × ${fmt(r.dt,4)} = ${fmt(r.dy,3)} px. `+
+      `Position: ${fmt(r.beforeY,3)} + ${fmt(r.dy,3)} = ${fmt(r.y,3)} px.`;
+  }
+  function updateModeNote() {
+    const p=params();
+    $('modeNote').textContent = p.model==='frame'
+      ? `Gravity is ${fmt(p.gravity,3)} px/frame². At ${p.fps} FPS, that is ${fmt(p.accel,3)} px/s² (${fmt(p.gravity,3)} × ${p.fps}²). Changing FPS without changing this value changes the physical motion.`
+      : `Gravity is ${fmt(p.gravity,3)} px/s². Each frame adds a velocity change of a × Δt = ${fmt(p.gravity,3)} × ${fmt(p.dt,4)} = ${fmt(p.gravity*p.dt,3)} px/s. Changing FPS changes the size of each update, not the intended acceleration.`;
+    updateChallenge();
+  }
+  function updateChallenge() {
+    const g=Math.max(0,Number($('challengeG').value)||0), f=Number($('challengeFps').value);
+    const frameG=g/(f*f);
+    $('challengeEquation').textContent =
+      `${fmt(g,3)} px/s² ÷ (${f} frames/s)² = ${fmt(frameG,6)} px/frame²`;
+    $('challengeResult').textContent =
+      `At ${f} FPS, use ${fmt(frameG,6)} pixels/frame² to represent ${fmt(g,3)} pixels/second².`;
+  }
+  $('step').addEventListener('click',step);
+  $('play').addEventListener('click',()=>{
+    if(timer!==null){stop();return;}
+    $('play').textContent='Pause';
+    timer=setInterval(step,1000/Number(fpsEl.value));
+  });
+  $('reset').addEventListener('click',reset);
+  $('oneSecond').addEventListener('click',()=>{
+    stop();
+    const target=state.time+1;
+    while(state.time+1e-9<target) step();
+  });
+  [fpsEl,modelEl,gravityEl,initialEl].forEach(el=>el.addEventListener('change',reset));
+  [gravityEl,initialEl].forEach(el=>el.addEventListener('input',()=>{ if(el===gravityEl) updateModeNote(); }));
+  $('challengeG').addEventListener('input',updateChallenge);
+  $('challengeFps').addEventListener('change',updateChallenge);
+  reset();
+})();
+</script>
+</body>
+</html>
